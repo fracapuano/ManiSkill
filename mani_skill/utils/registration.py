@@ -136,7 +136,7 @@ class TimeLimitWrapper(gym.Wrapper):
             if prev_frame_locals["max_episode_steps"] is not None:
                 max_episode_steps = prev_frame_locals["max_episode_steps"]
             # do some wrapper surgery to remove the previous timelimit wrapper
-            # with gymnasium 0.29.1, this will remove the timelimit wrapper and nothing else.
+            # With current Gymnasium versions, this should remove the injected TimeLimit wrapper and nothing else.
             curr_env = env
             found_env = False
             while curr_env is not None:
