@@ -39,6 +39,9 @@ from mani_skill.utils import common, gym_utils, sapien_utils, tree
 from mani_skill.utils.structs import Actor, Articulation
 from mani_skill.utils.structs.pose import Pose
 from mani_skill.utils.structs.types import Array, SimConfig
+from mani_skill.utils.visualization.viewer_camera_control import (
+    ViewerCameraControlPlugin,
+)
 from mani_skill.utils.visualization.misc import tile_images
 
 
@@ -115,6 +118,9 @@ class BaseEnv(gym.Env):
         enhanced_determinism (bool): By default this is False and env resets will reset the episode RNG only when a seed / seed list is given.
             If True, the environment will reset the episode RNG upon each reset regardless of whether a seed is provided.
             Generally enhanced_determinisim is not needed and users are recommended to pass seeds into the env reset function instead.
+
+        enable_camera_pose_editing (bool): If True, the human viewer exposes an in-window camera editor that lets you click camera frustums
+            and drag a gizmo to update their poses live.
     """
 
     # fmt: off
@@ -208,8 +214,10 @@ class BaseEnv(gym.Env):
         render_backend: str = "gpu",
         parallel_in_single_scene: bool = False,
         enhanced_determinism: bool = False,
+        enable_camera_pose_editing: bool = False,
     ):
         self._enhanced_determinism = enhanced_determinism
+        self._enable_camera_pose_editing = enable_camera_pose_editing
 
         self.num_envs = num_envs
         self.reconfiguration_freq = reconfiguration_freq if reconfiguration_freq is not None else 0
@@ -312,6 +320,7 @@ class BaseEnv(gym.Env):
         # Render mode
         self.render_mode = render_mode
         self._viewer = None
+        self._viewer_camera_control_plugin = None
 
         # Lighting
         self.enable_shadow = enable_shadow
@@ -1250,6 +1259,7 @@ class BaseEnv(gym.Env):
             return
         self._viewer.close()
         self._viewer = None
+        self._viewer_camera_control_plugin = None
 
     @cached_property
     def segmentation_id_map(self):
@@ -1331,6 +1341,15 @@ class BaseEnv(gym.Env):
     def viewer(self):
         return self._viewer
 
+    def _ensure_viewer_camera_control_plugin(self):
+        if self._viewer is None:
+            return
+        if self._viewer_camera_control_plugin is None:
+            self._viewer_camera_control_plugin = ViewerCameraControlPlugin(self)
+            self._viewer.plugins.append(self._viewer_camera_control_plugin)
+            self._viewer_camera_control_plugin.init(self._viewer)
+        self._viewer_camera_control_plugin.notify_scene_change()
+
     def _setup_viewer(self):
         """Setup the interactive viewer.
 
@@ -1347,6 +1366,8 @@ class BaseEnv(gym.Env):
         )
         control_window.show_joint_axes = False
         control_window.show_camera_linesets = False
+        if self._enable_camera_pose_editing:
+            self._ensure_viewer_camera_control_plugin()
         if "render_camera" in self._human_render_cameras:
             self._viewer.set_camera_pose(
                 self._human_render_cameras["render_camera"].camera.global_pose[0].sp
