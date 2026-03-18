@@ -1344,6 +1344,13 @@ class BaseEnv(gym.Env):
     def _ensure_viewer_camera_control_plugin(self):
         if self._viewer is None:
             return
+        existing_plugin = sapien_utils.get_obj_by_type(
+            self._viewer.plugins, ViewerCameraControlPlugin, is_unique=False
+        )
+        if isinstance(existing_plugin, list):
+            self._viewer_camera_control_plugin = existing_plugin[0]
+        elif existing_plugin is not None:
+            self._viewer_camera_control_plugin = existing_plugin
         if self._viewer_camera_control_plugin is None:
             self._viewer_camera_control_plugin = ViewerCameraControlPlugin(self)
             self._viewer.plugins.append(self._viewer_camera_control_plugin)
