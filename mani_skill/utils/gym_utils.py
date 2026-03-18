@@ -9,25 +9,9 @@ from gymnasium import spaces
 from mani_skill.utils.logging_utils import logger
 from mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 
-
-def _gym_version_tuple() -> tuple[int, ...]:
-    version_core = gym.__version__.split("+", 1)[0]
-    version_parts = version_core.split(".")
-    parsed_parts = []
-    for part in version_parts:
-        numeric_prefix = ""
-        for char in part:
-            if char.isdigit():
-                numeric_prefix += char
-            else:
-                break
-        if not numeric_prefix:
-            break
-        parsed_parts.append(int(numeric_prefix))
-    return tuple(parsed_parts)
-
-
-IS_GYMNASIUM_1 = _gym_version_tuple() >= (1, 0, 0)
+IS_GYMNASIUM_1 = False
+if gym.__version__ > "1.0.0":
+    IS_GYMNASIUM_1 = True
 
 
 def find_max_episode_steps_value(env):
